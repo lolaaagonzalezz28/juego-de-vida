@@ -1,0 +1,194 @@
+<html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Life RPG</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(120deg, #1f1f2e, #2a2a40);
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+}
+h1,h2 { text-align: center; }
+section {
+  background: #2f2f4f;
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+button {
+  background: #ffcc00;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+input, select {
+  padding: 5px;
+  border-radius: 8px;
+  border: none;
+}
+.stat {
+  display: flex;
+  justify-content: space-between;
+}
+.heart { color: red; }
+.coin { color: gold; }
+small { opacity: 0.7; }
+</style>
+</head>
+
+<body>
+
+<h1>🎮 LIFE RPG</h1>
+
+<section>
+<h2>👤 Personaje</h2>
+Nombre: <input id="nameInput">
+<button onclick="saveName()">Guardar</button>
+<p>Nombre: <b id="playerName">—</b></p>
+<p>❤️ Vida: <span id="life"></span></p>
+<p>🪙 Monedas: <span id="coins"></span></p>
+</section>
+
+<section>
+<h2>📊 Niveles por Aspecto</h2>
+<p>💪 Físico: Nivel <span id="lvlFisico"></span></p>
+<p>🧠 Mental: Nivel <span id="lvlMental"></span></p>
+<p>💖 Emocional: Nivel <span id="lvlEmocional"></span></p>
+</section>
+
+<section>
+<h2>📝 Hábitos</h2>
+Nombre: <input id="habitName">
+Tipo:
+<select id="habitType">
+  <option value="bueno">Bueno</option>
+  <option value="malo">Malo</option>
+</select>
+Valor:
+<input type="number" id="habitValue" value="1">
+<button onclick="addHabit()">Agregar</button>
+
+<ul id="habitList"></ul>
+</section>
+
+<section>
+<h2>🛒 Tienda (Permisos)</h2>
+<ul id="shop"></ul>
+</section>
+
+<section>
+<h2>🏆 Logros</h2>
+<ul id="achievements"></ul>
+</section>
+
+<section>
+<h2>🔥 Frase Motivacional</h2>
+<p id="quote"></p>
+</section>
+
+<script>
+let data = JSON.parse(localStorage.getItem("lifeRPG")) || {
+  name:"",
+  life:10,
+  coins:0,
+  habits:[],
+  permissions:[],
+  achievements:[],
+  levels:{fisico:1,mental:1,emocional:1}
+};
+
+const quotes = [
+ "Un día a la vez.",
+ "Hoy entrenás, mañana agradecés.",
+ "No es motivación, es disciplina.",
+ "Estás jugando a largo plazo.",
+ "Cada hábito cuenta."
+];
+
+function save() {
+  localStorage.setItem("lifeRPG", JSON.stringify(data));
+}
+
+function render() {
+  document.getElementById("playerName").innerText = data.name || "Sin nombre";
+  document.getElementById("life").innerHTML = "❤️".repeat(data.life);
+  document.getElementById("coins").innerText = data.coins;
+
+  lvlFisico.innerText = data.levels.fisico;
+  lvlMental.innerText = data.levels.mental;
+  lvlEmocional.innerText = data.levels.emocional;
+
+  habitList.innerHTML="";
+  data.habits.forEach((h,i)=>{
+    let li=document.createElement("li");
+    li.innerHTML = `${h.name} (${h.type}) 
+    <button onclick="doHabit(${i})">Hacer</button>`;
+    habitList.appendChild(li);
+  });
+
+  shop.innerHTML="";
+  data.permissions.forEach(p=>{
+    let li=document.createElement("li");
+    li.innerText = p;
+    shop.appendChild(li);
+  });
+
+  achievements.innerHTML="";
+  data.achievements.forEach(a=>{
+    let li=document.createElement("li");
+    li.innerText = a;
+    achievements.appendChild(li);
+  });
+
+  quote.innerText = quotes[Math.floor(Math.random()*quotes.length)];
+}
+
+function saveName(){
+  data.name = nameInput.value;
+  save(); render();
+}
+
+function addHabit(){
+  data.habits.push({
+    name:habitName.value,
+    type:habitType.value,
+    value:parseInt(habitValue.value)
+  });
+  save(); render();
+}
+
+function doHabit(i){
+  let h=data.habits[i];
+  if(h.type==="bueno"){
+    data.coins += h.value;
+    data.levels.fisico += 0.1;
+  } else {
+    if(!data.permissions.includes(h.name)){
+      data.life -= h.value;
+      if(data.life<=0){
+        alert("💀 Vida en 0. RETO ACTIVADO");
+        data.life=10;
+      }
+    }
+  }
+  checkAchievements();
+  save(); render();
+}
+
+function checkAchievements(){
+  if(data.coins>=10 && !data.achievements.includes("Primeras 10 monedas")){
+    data.achievements.push("Primeras 10 monedas (+5)");
+    data.coins+=5;
+  }
+}
+
+render();
+</script>
+
+</body>
+</html>
