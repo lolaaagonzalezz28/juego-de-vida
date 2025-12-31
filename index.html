@@ -1,194 +1,241 @@
-<html>
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Life RPG</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Inter&display=swap" rel="stylesheet">
+
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: linear-gradient(120deg, #1f1f2e, #2a2a40);
-  color: #fff;
-  margin: 0;
-  padding: 20px;
+body{
+  margin:0;
+  font-family:Inter, sans-serif;
+  background:#fff;
+  color:#000;
 }
-h1,h2 { text-align: center; }
-section {
-  background: #2f2f4f;
-  border-radius: 15px;
-  padding: 15px;
-  margin-bottom: 20px;
+h2{
+  font-family:Montserrat, sans-serif;
+  font-size:18px;
 }
-button {
-  background: #ffcc00;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 10px;
-  cursor: pointer;
+.app{padding:15px;padding-bottom:80px;}
+.top-bar{text-align:right;font-weight:bold;}
+.avatar-box{display:flex;gap:15px;align-items:center;}
+.avatar{
+  width:90px;height:90px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
 }
-input, select {
-  padding: 5px;
-  border-radius: 8px;
-  border: none;
+button{
+  border:none;border-radius:8px;padding:6px 10px;
+  background:#000;color:#fff;
 }
-.stat {
-  display: flex;
-  justify-content: space-between;
+.habit{display:flex;justify-content:space-between;margin:6px 0;}
+.quote{margin-top:25px;font-style:italic;opacity:.7;}
+.tab-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  height:65px;border-top:1px solid #ddd;
+  display:flex;background:#fff;
 }
-.heart { color: red; }
-.coin { color: gold; }
-small { opacity: 0.7; }
+.tab{
+  flex:1;text-align:center;font-size:12px;
+  color:#888;padding-top:8px;
+}
+.tab.active{color:#000;font-weight:bold;}
+.hidden{display:none;}
+.lock{opacity:.4;}
 </style>
 </head>
 
 <body>
 
-<h1>🎮 LIFE RPG</h1>
+<div class="top-bar">🪙 <span id="coins"></span></div>
 
-<section>
-<h2>👤 Personaje</h2>
-Nombre: <input id="nameInput">
-<button onclick="saveName()">Guardar</button>
-<p>Nombre: <b id="playerName">—</b></p>
-<p>❤️ Vida: <span id="life"></span></p>
-<p>🪙 Monedas: <span id="coins"></span></p>
-</section>
+<div class="app">
 
-<section>
-<h2>📊 Niveles por Aspecto</h2>
-<p>💪 Físico: Nivel <span id="lvlFisico"></span></p>
-<p>🧠 Mental: Nivel <span id="lvlMental"></span></p>
-<p>💖 Emocional: Nivel <span id="lvlEmocional"></span></p>
-</section>
+<div id="home">
+  <div class="avatar-box">
+    <div class="avatar" id="avatar"></div>
+    <div>
+      <button onclick="editAvatar()">Editar</button>
+      <div>❤️ <span id="life"></span></div>
+      <small>🔥 Racha: <span id="streak"></span></small>
+    </div>
+  </div>
 
-<section>
-<h2>📝 Hábitos</h2>
-Nombre: <input id="habitName">
-Tipo:
-<select id="habitType">
-  <option value="bueno">Bueno</option>
-  <option value="malo">Malo</option>
-</select>
-Valor:
-<input type="number" id="habitValue" value="1">
-<button onclick="addHabit()">Agregar</button>
+  <h2>Hábitos</h2>
+  <div id="habits"></div>
 
-<ul id="habitList"></ul>
-</section>
+  <div class="quote" id="quote"></div>
+</div>
 
-<section>
-<h2>🛒 Tienda (Permisos)</h2>
-<ul id="shop"></ul>
-</section>
+<div id="aspects" class="hidden">
+  <h2>Aspectos</h2>
+  <div id="aspectList"></div>
+</div>
 
-<section>
-<h2>🏆 Logros</h2>
-<ul id="achievements"></ul>
-</section>
+<div id="shop" class="hidden">
+  <h2>Tienda</h2>
+  <div id="shopList"></div>
+</div>
 
-<section>
-<h2>🔥 Frase Motivacional</h2>
-<p id="quote"></p>
-</section>
+<div id="achievements" class="hidden">
+  <h2>Logros</h2>
+  <div id="achievementList"></div>
+</div>
+
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="showTab('home',this)">⬤<br>Inicio</div>
+  <div class="tab" onclick="showTab('aspects',this)">⬤<br>Aspectos</div>
+  <div class="tab" onclick="showTab('shop',this)">⬤<br>Tienda</div>
+  <div class="tab" onclick="showTab('achievements',this)">⬤<br>Logros</div>
+</div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("lifeRPG")) || {
-  name:"",
-  life:10,
-  coins:0,
-  habits:[],
+let today=new Date().toDateString();
+
+let data=JSON.parse(localStorage.getItem("lifeRPGpro"))||{
+  life:10,coins:0,streak:0,lastDay:"",
+  avatar:{piel:"#f2d6c9",pelo:"#3a2c1c",ropa:"#555"},
+  aspects:{Físico:1,Mental:1,Emocional:1,Social:1,Espiritual:1,Disciplina:1,Constancia:1},
+  habits:[
+    {name:"Entrenar",type:"bueno",value:2,done:false},
+    {name:"Dormir poco",type:"malo",value:1,done:false}
+  ],
+  shop:[{name:"Salir de joda",price:5}],
   permissions:[],
-  achievements:[],
-  levels:{fisico:1,mental:1,emocional:1}
+  achievements:[
+    {name:"Primer hábito",reward:5,done:false,claimed:false},
+    {name:"5 días limpios",reward:10,done:false,claimed:false,secret:true}
+  ]
 };
 
-const quotes = [
- "Un día a la vez.",
- "Hoy entrenás, mañana agradecés.",
- "No es motivación, es disciplina.",
- "Estás jugando a largo plazo.",
- "Cada hábito cuenta."
+const quotes=[
+ "No te estás exigiendo de más, estás creciendo.",
+ "Entrenar cuando no tenés ganas es carácter.",
+ "La disciplina es una forma de amor propio.",
+ "Jugá esta vida como si fuera tu personaje favorito.",
+ "Cada día que cumplís es experiencia ganada."
 ];
 
-function save() {
-  localStorage.setItem("lifeRPG", JSON.stringify(data));
-}
+function save(){localStorage.setItem("lifeRPGpro",JSON.stringify(data));}
 
-function render() {
-  document.getElementById("playerName").innerText = data.name || "Sin nombre";
-  document.getElementById("life").innerHTML = "❤️".repeat(data.life);
-  document.getElementById("coins").innerText = data.coins;
+function render(){
+  if(data.lastDay!==today){
+    data.habits.forEach(h=>h.done=false);
+    data.lastDay=today;
+    save();
+  }
 
-  lvlFisico.innerText = data.levels.fisico;
-  lvlMental.innerText = data.levels.mental;
-  lvlEmocional.innerText = data.levels.emocional;
+  life.innerText="❤️".repeat(data.life);
+  coins.innerText=data.coins;
+  streak.innerText=data.streak;
 
-  habitList.innerHTML="";
-  data.habits.forEach((h,i)=>{
-    let li=document.createElement("li");
-    li.innerHTML = `${h.name} (${h.type}) 
-    <button onclick="doHabit(${i})">Hacer</button>`;
-    habitList.appendChild(li);
+  avatar.style.background=data.avatar.piel;
+  avatar.style.border=`6px solid ${data.avatar.pelo}`;
+
+  habits.innerHTML="";
+  data.habits.forEach(h=>{
+    let d=document.createElement("div");
+    d.className="habit";
+    d.innerHTML=`${h.name}
+    <button ${h.done?"disabled":""} onclick="doHabit('${h.name}')">✔</button>`;
+    habits.appendChild(d);
   });
 
-  shop.innerHTML="";
-  data.permissions.forEach(p=>{
-    let li=document.createElement("li");
-    li.innerText = p;
-    shop.appendChild(li);
+  aspectList.innerHTML="";
+  for(let a in data.aspects){
+    aspectList.innerHTML+=`${a}: Nivel ${data.aspects[a]}<br>`;
+  }
+
+  shopList.innerHTML="";
+  data.shop.forEach(s=>{
+    let bought=data.permissions.includes(s.name);
+    shopList.innerHTML+=`${s.name} (${s.price}🪙)
+    <button ${bought?"disabled":""} onclick="buy('${s.name}',${s.price})">
+    ${bought?"Comprado":"Comprar"}</button><br>`;
   });
 
-  achievements.innerHTML="";
+  achievementList.innerHTML="";
   data.achievements.forEach(a=>{
-    let li=document.createElement("li");
-    li.innerText = a;
-    achievements.appendChild(li);
+    if(a.secret && !a.done) return;
+    let d=document.createElement("div");
+    d.className=a.done?"":"lock";
+    if(a.done && !a.claimed){
+      d.innerHTML=`${a.name} <button onclick="claim('${a.name}')">Reclamar</button>`;
+    }else if(a.claimed){
+      d.innerHTML=`${a.name} ✅`;
+    }else{
+      d.innerText=a.name;
+    }
+    achievementList.appendChild(d);
   });
 
-  quote.innerText = quotes[Math.floor(Math.random()*quotes.length)];
+  quote.innerText=quotes[Math.floor(Math.random()*quotes.length)];
 }
 
-function saveName(){
-  data.name = nameInput.value;
-  save(); render();
-}
+function doHabit(name){
+  let h=data.habits.find(x=>x.name===name);
+  if(h.done) return;
+  h.done=true;
 
-function addHabit(){
-  data.habits.push({
-    name:habitName.value,
-    type:habitType.value,
-    value:parseInt(habitValue.value)
-  });
-  save(); render();
-}
-
-function doHabit(i){
-  let h=data.habits[i];
   if(h.type==="bueno"){
-    data.coins += h.value;
-    data.levels.fisico += 0.1;
-  } else {
+    data.coins+=h.value;
+    data.aspects.Físico++;
+    data.streak++;
+  }else{
     if(!data.permissions.includes(h.name)){
-      data.life -= h.value;
+      data.life-=h.value;
+      data.streak=0;
       if(data.life<=0){
-        alert("💀 Vida en 0. RETO ACTIVADO");
+        alert("Vida en 0 → reto");
         data.life=10;
       }
     }
   }
-  checkAchievements();
-  save(); render();
+
+  if(data.streak>=5) data.achievements[1].done=true;
+  data.achievements[0].done=true;
+
+  save();render();
 }
 
-function checkAchievements(){
-  if(data.coins>=10 && !data.achievements.includes("Primeras 10 monedas")){
-    data.achievements.push("Primeras 10 monedas (+5)");
-    data.coins+=5;
+function buy(name,price){
+  if(data.coins>=price){
+    data.coins-=price;
+    data.permissions.push(name);
+    save();render();
   }
+}
+
+function claim(name){
+  let a=data.achievements.find(x=>x.name===name);
+  if(!a.claimed){
+    data.coins+=a.reward;
+    a.claimed=true;
+    save();render();
+  }
+}
+
+function editAvatar(){
+  let piel=prompt("Color de piel (#hex)",data.avatar.piel);
+  let pelo=prompt("Color de pelo (#hex)",data.avatar.pelo);
+  let ropa=prompt("Color de ropa (#hex)",data.avatar.ropa);
+  if(piel) data.avatar.piel=piel;
+  if(pelo) data.avatar.pelo=pelo;
+  if(ropa) data.avatar.ropa=ropa;
+  save();render();
+}
+
+function showTab(id,el){
+  document.querySelectorAll(".app > div").forEach(d=>d.classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  el.classList.add("active");
 }
 
 render();
 </script>
-
 </body>
 </html>
